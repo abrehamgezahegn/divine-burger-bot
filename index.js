@@ -9,8 +9,11 @@ const { menuItems } = require("./staticData/menuItems");
 const { albumOne, albumTwo } = require("./staticData/gallery");
 const { orderKeyboard } = require("./staticData/keyboards");
 
-const sendHomeMenuKeyboard = (msg) => {
-  bot.sendMessage(msg.chat.id, "Welcome, You seem hungry", {
+const sendHomeMenuKeyboard = (
+  msg,
+  message = "Welcome to Divine burger, you seem hungry 🤔"
+) => {
+  bot.sendMessage(msg.chat.id, message, {
     reply_markup: {
       one_time_keyboard: true,
       keyboard: [
@@ -70,6 +73,13 @@ const sendGallery = (msg) => {
   bot.sendMediaGroup(msg.chat.id, albumTwo);
 };
 
+const sendContactInfo = (msg) => {
+  bot.sendMessage(
+    msg.chat.id,
+    "🍔 Divine Burger 🧑‍🍳\n\n ☎️ +251965966465 \nig: @divineburger_ \ntwitter: @divineburger_  \n\n Feel free to contact us 😁."
+  );
+};
+
 bot.onText(/\/start/, (msg) => {
   sendHomeMenuKeyboard(msg);
 });
@@ -95,8 +105,14 @@ bot.on("message", (msg) => {
   if (msg.text === "📷 Gallery") {
     sendGallery(msg);
   }
+  if (msg.text === "📱 Contact") {
+    sendContactInfo(msg);
+  }
   if (msg.text === "Home") {
     sendHomeMenuKeyboard(msg);
+  }
+  if (msg.text === "Cancel") {
+    sendOrderKeyboard(msg);
   }
 });
 
@@ -218,7 +234,7 @@ bot.on("location", (msg) => {
           );
         })
         .then(() => {
-          sendHomeMenuKeyboard(msg);
+          sendHomeMenuKeyboard(msg, "Do you have another order?");
         });
     });
 });
