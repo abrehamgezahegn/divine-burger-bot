@@ -1,7 +1,8 @@
 process.env.NTBA_FIX_319 = 1;
+require("dotenv").config();
 
 const TelegramBot = require("node-telegram-bot-api");
-const token = "1414429912:AAGe8qIBAFEloaEGaY-FXeApFFJupxrKcFI";
+const token = process.env.BOT_TOKEN;
 const bot = new TelegramBot(token, { polling: true });
 
 const { menuItems } = require("./staticData/menuItems");
@@ -39,7 +40,6 @@ const sendMenuPicture = (msg) => {
 };
 
 const sendLocation = (msg) => {
-  console.log("msg", msg);
   bot.sendLocation(msg.chat.id, 8.998793301318967, 38.78529252962021);
   bot.sendMessage(msg.chat.id, "📍 Bole new building behind Sheger building", {
     reply_markup: {
@@ -197,7 +197,7 @@ bot.on("location", (msg) => {
       const meal = menuItems[orders[msg.chat.id]];
       bot
         .sendMessage(
-          -403696679,
+          process.env.GROUP_ID,
           `   \n\n\n\n🛵 New order 🛵 \n\n🍔 ${meal.mealTitle} \n🧔 ${
             msg.chat.first_name
           } \n📱 ${contacts[msg.chat.id]} \n💬 @${
@@ -206,7 +206,7 @@ bot.on("location", (msg) => {
         )
         .then(() => {
           bot.sendLocation(
-            -403696679,
+            process.env.GROUP_ID,
             msg.location.latitude,
             msg.location.longitude
           );
