@@ -4,9 +4,14 @@ const TelegramBot = require("node-telegram-bot-api");
 const token = "1414429912:AAGe8qIBAFEloaEGaY-FXeApFFJupxrKcFI";
 const bot = new TelegramBot(token, { polling: true });
 
+const { menuItems } = require("./staticData/menuItems");
+const { albumOne, albumTwo } = require("./staticData/gallery");
+const { orderKeyboard } = require("./staticData/keyboards");
+
 const sendHomeMenuKeyboard = (msg) => {
   bot.sendMessage(msg.chat.id, "Welcome, You seem hungry", {
     reply_markup: {
+      one_time_keyboard: true,
       keyboard: [
         ["📖 Menu"],
         ["🍔 Order"],
@@ -21,96 +26,7 @@ const sendHomeMenuKeyboard = (msg) => {
 const sendOrderKeyboard = (msg) => {
   bot.sendMessage(msg.chat.id, "What should we get you?", {
     reply_markup: {
-      inline_keyboard: [
-        [
-          {
-            text: "Becon Delux (Free coke) ",
-            callback_data: JSON.stringify({
-              type: "order",
-              meal: "Becon Delux",
-              price: 205,
-              meal_id: 1,
-            }),
-          },
-        ],
-        [
-          {
-            text: "Crispy chicken special",
-            callback_data: JSON.stringify({
-              type: "order",
-              meal: "Crispy chicken",
-              price: 186,
-              meal_id: 2,
-            }),
-          },
-        ],
-        [
-          {
-            text: "Divine junkie",
-            callback_data: JSON.stringify({
-              type: "order",
-              meal: "Divine junkie",
-              price: 176,
-              meal_id: 3,
-            }),
-          },
-        ],
-        [
-          {
-            text: "Pastrami burger",
-            callback_data: JSON.stringify({
-              type: "order",
-              meal: "Pastrami",
-              price: 150,
-              meal_id: 4,
-            }),
-          },
-        ],
-        [
-          {
-            text: "Smoken' Spice",
-            callback_data: JSON.stringify({
-              type: "order",
-              meal: "Spice",
-              price: 146,
-              meal_id: 5,
-            }),
-          },
-        ],
-        [
-          {
-            text: "California style",
-            callback_data: JSON.stringify({
-              type: "order",
-              meal: "Cali",
-              price: 120,
-              meal_id: 6,
-            }),
-          },
-        ],
-        [
-          {
-            text: "French Fries",
-            callback_data: JSON.stringify({
-              type: "order",
-              meal: "fries",
-              price: 50,
-              meal_id: 7,
-            }),
-          },
-        ],
-        [
-          {
-            text: "Coke",
-            callback_data: JSON.stringify({
-              type: "order",
-              meal: "Coke",
-              price: 16,
-              meal_id: 8,
-            }),
-          },
-        ],
-      ],
+      inline_keyboard: orderKeyboard,
     },
   });
 };
@@ -123,6 +39,7 @@ const sendMenuPicture = (msg) => {
 };
 
 const sendLocation = (msg) => {
+  console.log("msg", msg);
   bot.sendLocation(msg.chat.id, 8.998793301318967, 38.78529252962021);
   bot.sendMessage(msg.chat.id, "📍 Bole new building behind Sheger building", {
     reply_markup: {
@@ -148,51 +65,9 @@ const sendDealsAndDiscounts = (msg) => {
 };
 
 const sendGallery = (msg) => {
-  bot.sendMediaGroup(msg.chat.id, [
-    {
-      type: "photo",
-      media:
-        "https://res.cloudinary.com/de5awe7fs/image/upload/v1609099378/Divine/gallery/photo_2020-12-26_23-58-20.jpg",
-    },
-    {
-      type: "video",
-      media:
-        "https://res.cloudinary.com/de5awe7fs/video/upload/v1609099249/Divine/IMG_4182.mp4",
-    },
-    {
-      type: "photo",
-      media:
-        "https://res.cloudinary.com/de5awe7fs/image/upload/v1609099377/Divine/gallery/photo_2020-12-27_00-02-19.jpg",
-    },
-    {
-      type: "photo",
-      media:
-        "https://res.cloudinary.com/de5awe7fs/image/upload/v1609099376/Divine/gallery/photo_2020-12-27_00-03-11.jpg",
-    },
-  ]);
+  bot.sendMediaGroup(msg.chat.id, albumOne);
 
-  bot.sendMediaGroup(msg.chat.id, [
-    {
-      type: "photo",
-      media:
-        "https://res.cloudinary.com/de5awe7fs/image/upload/v1609099199/Divine/photo_2020-12-27_00-07-06.jpg",
-    },
-    {
-      type: "photo",
-      media:
-        "https://res.cloudinary.com/de5awe7fs/video/upload/v1609099386/Divine/gallery/IMG_4182.mp4",
-    },
-    {
-      type: "photo",
-      media:
-        "https://drive.google.com/file/d/15G_1dgDqKqo_StF4GAFvLkCTJ952sPBX/view?usp=sharing",
-    },
-    {
-      type: "photo",
-      media:
-        "https://res.cloudinary.com/de5awe7fs/image/upload/v1609099380/Divine/gallery/photo_2020-12-26_23-58-15.jpg",
-    },
-  ]);
+  bot.sendMediaGroup(msg.chat.id, albumTwo);
 };
 
 bot.onText(/\/start/, (msg) => {
@@ -225,54 +100,127 @@ bot.on("message", (msg) => {
   }
 });
 
+const orders = {};
+
 bot.on("callback_query", (query) => {
   const data = JSON.parse(query.data);
   const chat = query.message.chat;
-  console.log("query ", query);
 
   switch (data.type) {
     case "order": {
-      if (data.meal_id === 1) {
-        bot.sendPhoto(
-          chat.id,
-          "https://res.cloudinary.com/de5awe7fs/image/upload/v1609099380/Divine/gallery/photo_2020-12-26_23-58-15.jpg"
-        );
-        bot.sendMessage(
-          chat.id,
-          "🍔 Becon Delux \n💰 205Birr \n👨‍🍳 Double patty , double sliced cheese , double bacon with American cheese,  double  sliced beef. -with a free coca cola \n ",
-          {
-            reply_markup: {
-              inline_keyboard: [
-                [
-                  {
-                    text: "Confirm",
-                    callback_data: JSON.stringify({
-                      type: "confirm_order",
-                      order: data.meal_id,
-                      userName: chat.username,
-                    }),
-                  },
-                  {
-                    text: "Changed my mind",
-                    callback_data: JSON.stringify({
-                      type: "show_order_menu",
-                    }),
-                  },
-                ],
-              ],
-            },
-          }
-        );
-      }
+      bot.sendPhoto(chat.id, menuItems[data.meal_id].cover);
+      bot.sendMessage(chat.id, menuItems[data.meal_id].mealDetail, {
+        reply_markup: {
+          inline_keyboard: [
+            [
+              {
+                text: "🍟 Place order",
+                callback_data: JSON.stringify({
+                  type: "place_order",
+                  meal_id: data.meal_id,
+                }),
+              },
+              {
+                text: "🙉 Cancel",
+                callback_data: JSON.stringify({
+                  type: "show_order_menu",
+                }),
+              },
+            ],
+          ],
+        },
+      });
       break;
     }
-    case "confirm_order":
-      bot.sendMessage(chat.id, `One ${data.order} coming your way.`);
+    case "place_order":
+      orders[chat.id] = data.meal_id;
+      const contactOption = {
+        parse_mode: "Markdown",
+        reply_markup: {
+          one_time_keyboard: true,
+          keyboard: [
+            [
+              {
+                text: "My phone number",
+                request_contact: true,
+              },
+            ],
+            ["Cancel"],
+          ],
+        },
+      };
+
+      bot.sendMessage(chat.id, "How can we contact you?", contactOption);
+
       break;
     case "show_order_menu":
       sendOrderKeyboard(query.message);
       break;
   }
+});
+
+const contacts = {};
+
+bot.on("contact", (msg) => {
+  const locationOption = {
+    parse_mode: "Markdown",
+    reply_markup: {
+      one_time_keyboard: true,
+      keyboard: [
+        [
+          {
+            text: "My location",
+            request_location: true,
+          },
+        ],
+        ["Cancel"],
+      ],
+    },
+  };
+
+  contacts[msg.chat.id] = msg.contact.phone_number;
+
+  bot.sendMessage(
+    msg.chat.id,
+    "Where should we deliver your order?",
+    locationOption
+  );
+});
+
+bot.on("location", (msg) => {
+  bot
+    .sendMessage(
+      msg.chat.id,
+      `Thank you ${msg.chat.first_name} 😁. Your order is through 🎊🎊🎊.`
+    )
+    .then(() => {
+      const meal = menuItems[orders[msg.chat.id]];
+      bot
+        .sendMessage(
+          -403696679,
+          `   \n\n\n\n🛵 New order 🛵 \n\n🍔 ${meal.mealTitle} \n🧔 ${
+            msg.chat.first_name
+          } \n📱 ${contacts[msg.chat.id]} \n💬 @${
+            msg.chat.username
+          } \n\n 👇👇👇`
+        )
+        .then(() => {
+          bot.sendLocation(
+            -403696679,
+            msg.location.latitude,
+            msg.location.longitude
+          );
+        })
+        .then(() => {
+          bot.sendVideo(
+            msg.chat.id,
+            "https://res.cloudinary.com/de5awe7fs/video/upload/v1609376029/Divine/gallery/order_complete.mp4"
+          );
+        })
+        .then(() => {
+          sendHomeMenuKeyboard(msg);
+        });
+    });
 });
 
 console.log("server up and running");
