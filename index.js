@@ -5,9 +5,24 @@ const TelegramBot = require("node-telegram-bot-api");
 const token = process.env.BOT_TOKEN;
 const bot = new TelegramBot(token, { polling: true });
 
+const mongoose = require("mongoose");
+
 const { menuItems } = require("./staticData/menuItems");
 const { albumOne, albumTwo } = require("./staticData/gallery");
 const { orderKeyboard } = require("./staticData/keyboards");
+
+const { User, Order } = require("./schemas");
+
+mongoose.connect("mongodb://localhost/divine", {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+});
+
+const db = mongoose.connection;
+db.on("error", console.error.bind(console, "connection error:"));
+db.once("open", () => {
+  // we're connected!
+});
 
 const sendHomeMenuKeyboard = (
   msg,
@@ -21,7 +36,7 @@ const sendHomeMenuKeyboard = (
         ["🍔 Order"],
         ["📍 Location"],
         ["📷 Gallery", "📱 Contact"],
-        ["🎖 Competitions", "💸 Deals / Discounts"],
+        ["🎖 Competitions", "💸 Deals and Discounts"],
       ],
     },
   });
@@ -80,34 +95,83 @@ const sendContactInfo = (msg) => {
   );
 };
 
+const sendLocationPrompt = (msg) => {
+  const locationOption = {
+    parse_mode: "Markdown",
+    reply_markup: {
+      one_time_keyboard: true,
+      keyboard: [
+        [
+          {
+            text: "My location",
+            request_location: true,
+          },
+        ],
+        ["Cancel"],
+      ],
+    },
+  };
+
+  bot.sendMessage(
+    msg.chat.id,
+    "Where should we deliver your order?",
+    locationOption
+  );
+};
+
+const sendContactPrompt = (msg) => {
+  const contactOption = {
+    parse_mode: "Markdown",
+    reply_markup: {
+      one_time_keyboard: true,
+      keyboard: [
+        [
+          {
+            text: "My phone number",
+            request_contact: true,
+          },
+        ],
+        ["Cancel"],
+      ],
+    },
+  };
+
+  bot.sendMessage(msg.chat.id, "How can we contact you?", contactOption);
+};
+
 bot.onText(/\/start/, (msg) => {
   sendHomeMenuKeyboard(msg);
 });
 
+bot.onText(/menu/i, (msg) => {
+  sendMenuPicture(msg);
+});
+
+bot.onText(/order/i, (msg) => {
+  sendOrderKeyboard(msg);
+});
+
+bot.onText(/location/i, (msg) => {
+  sendLocation(msg);
+});
+
+bot.onText(/gallery/i, (msg) => {
+  sendGallery(msg);
+});
+
+bot.onText(/competitions/i, (msg) => {
+  sendCompetitions(msg);
+});
+
+bot.onText(/deals and discounts/gi, (msg) => {
+  sendDealsAndDiscounts(msg);
+});
+
+bot.onText(/contact/i, (msg) => {
+  sendContactInfo(msg);
+});
+
 bot.on("message", (msg) => {
-  if (msg.text === "📖 Menu") {
-    sendMenuPicture(msg);
-  }
-  if (msg.text === "🍔 Order") {
-    sendOrderKeyboard(msg);
-  }
-
-  if (msg.text === "📍 Location") {
-    sendLocation(msg);
-  }
-
-  if (msg.text === "🎖 Competitions") {
-    sendCompetitions(msg);
-  }
-  if (msg.text === "💸 Deals / Discounts") {
-    sendDealsAndDiscounts(msg);
-  }
-  if (msg.text === "📷 Gallery") {
-    sendGallery(msg);
-  }
-  if (msg.text === "📱 Contact") {
-    sendContactInfo(msg);
-  }
   if (msg.text === "Home") {
     sendHomeMenuKeyboard(msg);
   }
@@ -116,9 +180,7 @@ bot.on("message", (msg) => {
   }
 });
 
-const orders = {};
-
-bot.on("callback_query", (query) => {
+bot.on("callback_query", async (query) => {
   const data = JSON.parse(query.data);
   const chat = query.message.chat;
 
@@ -149,24 +211,22 @@ bot.on("callback_query", (query) => {
       break;
     }
     case "place_order":
-      orders[chat.id] = data.meal_id;
-      const contactOption = {
-        parse_mode: "Markdown",
-        reply_markup: {
-          one_time_keyboard: true,
-          keyboard: [
-            [
-              {
-                text: "My phone number",
-                request_contact: true,
-              },
-            ],
-            ["Cancel"],
-          ],
-        },
-      };
+      const meal = menuItems[data.meal_id];
 
-      bot.sendMessage(chat.id, "How can we contact you?", contactOption);
+      const orderDb = new Order({
+        mealTitle: meal.mealTitle,
+        mealId: meal.mealId,
+        userChatId: chat.id,
+      });
+      await orderDb.save({ validateBeforeSave: true });
+
+      const user = await User.find().and({ chatId: chat.id });
+
+      if (user[0]) {
+        sendLocationPrompt(query.message);
+      } else {
+        sendContactPrompt(query.message);
+      }
 
       break;
     case "show_order_menu":
@@ -175,50 +235,42 @@ bot.on("callback_query", (query) => {
   }
 });
 
-const contacts = {};
+bot.on("contact", async (msg) => {
+  const userDb = new User({
+    firstName: msg.chat.first_name,
+    userName: msg.chat.username || "NO_USER_NAME",
+    phoneNumber: msg.contact.phone_number,
+    chatId: msg.chat.id,
+  });
+  await userDb.save({ validateBeforeSave: true });
 
-bot.on("contact", (msg) => {
-  const locationOption = {
-    parse_mode: "Markdown",
-    reply_markup: {
-      one_time_keyboard: true,
-      keyboard: [
-        [
-          {
-            text: "My location",
-            request_location: true,
-          },
-        ],
-        ["Cancel"],
-      ],
-    },
-  };
-
-  contacts[msg.chat.id] = msg.contact.phone_number;
-
-  bot.sendMessage(
-    msg.chat.id,
-    "Where should we deliver your order?",
-    locationOption
-  );
+  sendLocationPrompt(msg);
 });
 
-bot.on("location", (msg) => {
+bot.on("location", async (msg) => {
   bot
     .sendMessage(
       msg.chat.id,
       `Thank you ${msg.chat.first_name} 😁. Your order is through 🎊🎊🎊.`
     )
-    .then(() => {
-      const meal = menuItems[orders[msg.chat.id]];
+    .then(async () => {
+      const users = await User.find().and({ chatId: msg.chat.id });
+      const orders = await Order.find().and({ userChatId: msg.chat.id });
+      const order = orders[orders.length - 1];
+      const user = users[0];
+
+      const getUserName = () => {
+        const userName = msg.chat.username;
+        if (userName) return `💬 @${userName}`;
+        else return "";
+      };
+
       bot
         .sendMessage(
           process.env.GROUP_ID,
-          `   \n\n\n\n🛵 New order 🛵 \n\n🍔 ${meal.mealTitle} \n🧔 ${
+          `   \n\n\n\n🛵 New order 🛵 \n\n🍔 ${order.mealTitle} \n🧔 ${
             msg.chat.first_name
-          } \n📱 ${contacts[msg.chat.id]} \n💬 @${
-            msg.chat.username
-          } \n\n 👇👇👇`
+          } \n📱 ${user.phoneNumber} \n${getUserName()} \n\n 👇👇👇`
         )
         .then(() => {
           bot.sendLocation(
