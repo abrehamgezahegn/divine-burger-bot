@@ -64,15 +64,6 @@ const orderKeyboard = [
       }),
     },
   ],
-  [
-    {
-      text: "Coke",
-      callback_data: JSON.stringify({
-        type: "order",
-        meal_id: 8,
-      }),
-    },
-  ],
 ];
 
 module.exports = {
