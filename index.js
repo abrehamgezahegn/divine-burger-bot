@@ -2,8 +2,18 @@ process.env.NTBA_FIX_319 = 1;
 require("dotenv").config();
 
 const TelegramBot = require("node-telegram-bot-api");
+const express = require("express");
+const bodyParser = require("body-parser");
+
 const token = process.env.BOT_TOKEN;
-const bot = new TelegramBot(token, { polling: true });
+let bot;
+
+if (process.env.NODE_ENV === "production") {
+  bot = new TelegramBot(token);
+  bot.setWebHook(process.env.HEROKU_URL + bot.token);
+} else {
+  bot = new TelegramBot(token, { polling: true });
+}
 
 const mongoose = require("mongoose");
 
@@ -292,3 +302,14 @@ bot.on("location", async (msg) => {
 });
 
 console.log("server up and running");
+
+const app = express();
+
+app.use(bodyParser.json());
+
+app.listen(process.env.PORT);
+
+app.post("/" + bot.token, (req, res) => {
+  bot.processUpdate(req.body);
+  res.sendStatus(200);
+});
