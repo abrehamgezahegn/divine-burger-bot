@@ -13,7 +13,7 @@ const { orderKeyboard } = require("./staticData/keyboards");
 
 const { User, Order } = require("./schemas");
 
-mongoose.connect("mongodb://localhost/divine", {
+mongoose.connect(process.env.DATABASE_URL, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 });
@@ -21,7 +21,7 @@ mongoose.connect("mongodb://localhost/divine", {
 const db = mongoose.connection;
 db.on("error", console.error.bind(console, "connection error:"));
 db.once("open", () => {
-  // we're connected!
+  console.log("Mongodb connected :)");
 });
 
 const sendHomeMenuKeyboard = (
@@ -267,14 +267,14 @@ bot.on("location", async (msg) => {
 
       bot
         .sendMessage(
-          process.env.GROUP_ID,
+          process.env.TELEGRAM_GROUP_ID,
           `   \n\n\n\n🛵 New order 🛵 \n\n🍔 ${order.mealTitle} \n🧔 ${
             msg.chat.first_name
           } \n📱 ${user.phoneNumber} \n${getUserName()} \n\n 👇👇👇`
         )
         .then(() => {
           bot.sendLocation(
-            process.env.GROUP_ID,
+            process.env.TELEGRAM_GROUP_ID,
             msg.location.latitude,
             msg.location.longitude
           );
