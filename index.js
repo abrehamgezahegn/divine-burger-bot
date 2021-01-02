@@ -20,6 +20,7 @@ const mongoose = require("mongoose");
 const { menuItems } = require("./staticData/menuItems");
 const { albumOne, albumTwo } = require("./staticData/gallery");
 const { orderKeyboard } = require("./staticData/keyboards");
+const { getRandomFreshPrinceGIF } = require("./utils/getRandomFreshPrinceGif");
 
 const { User, Order } = require("./schemas");
 
@@ -290,10 +291,7 @@ bot.on("location", async (msg) => {
           );
         })
         .then(() => {
-          bot.sendVideo(
-            msg.chat.id,
-            "https://res.cloudinary.com/de5awe7fs/video/upload/v1609376029/Divine/gallery/order_complete.mp4"
-          );
+          bot.sendVideo(msg.chat.id, getRandomFreshPrinceGIF());
         })
         .then(() => {
           sendHomeMenuKeyboard(msg, "Do you have another order?");
