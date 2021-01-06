@@ -208,11 +208,11 @@ const sendContactPrompt = (msg) => {
       keyboard: [
         [
           {
-            text: "My phone number",
+            text: "📱 My phone number",
             request_contact: true,
           },
         ],
-        ["Home", "Cancel"],
+        ["🏠 Back to home", "◀️ Back to order"],
       ],
     },
   };
@@ -248,7 +248,7 @@ const sendOrderConfirmation = async (msg) => {
             }),
           },
           {
-            text: "🙊   Cancel",
+            text: "🙊 Cancel",
             callback_data: JSON.stringify({
               type: "cancel_order",
             }),
