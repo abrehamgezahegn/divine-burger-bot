@@ -127,6 +127,13 @@ const sendOutsideView = (msg) => {
   bot.sendMediaGroup(msg.chat.id, outsideView);
 };
 
+const sendGroupOrderError = (msg) => {
+  bot.sendMessage(
+    msg.chat.id,
+    "Sorry we don't accept orders from a group chat. Please head over @divineburger_bot to order."
+  );
+};
+
 const sendLocationPrompt = (msg) => {
   const locationOption = {
     parse_mode: "Markdown",
@@ -376,6 +383,11 @@ bot.onText(/menu/i, (msg) => {
 });
 
 bot.onText(/order/i, (msg) => {
+  if (msg.chat.id < 0) {
+    sendGroupOrderError(msg);
+    return;
+  }
+
   sendOrderKeyboard(msg);
 });
 
