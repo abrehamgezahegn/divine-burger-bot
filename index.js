@@ -440,27 +440,29 @@ bot.on("callback_query", async (query) => {
   switch (data.type) {
     case "order": {
       bot.sendPhoto(chat.id, menuItems[data.meal_id].cover);
-      bot.sendMessage(chat.id, menuItems[data.meal_id].mealDetail, {
-        reply_markup: {
-          inline_keyboard: [
-            [
-              {
-                text: "🍟 Place order",
-                callback_data: JSON.stringify({
-                  type: "place_order",
-                  meal_id: data.meal_id,
-                }),
-              },
-              {
-                text: "🙉 Cancel",
-                callback_data: JSON.stringify({
-                  type: "show_order_menu",
-                }),
-              },
+      setTimeout(() => {
+        bot.sendMessage(chat.id, menuItems[data.meal_id].mealDetail, {
+          reply_markup: {
+            inline_keyboard: [
+              [
+                {
+                  text: "🍟 Place order",
+                  callback_data: JSON.stringify({
+                    type: "place_order",
+                    meal_id: data.meal_id,
+                  }),
+                },
+                {
+                  text: "🙉 Cancel",
+                  callback_data: JSON.stringify({
+                    type: "show_order_menu",
+                  }),
+                },
+              ],
             ],
-          ],
-        },
-      });
+          },
+        });
+      }, 200);
       break;
     }
     case "place_order":
@@ -526,7 +528,7 @@ bot.on("contact", async (msg) => {
   });
   await userDb.save({ validateBeforeSave: true });
 
-  sendLocationPrompt(msg);
+  sendLocationOptions(msg);
 });
 
 bot.on("location", async (msg) => {
