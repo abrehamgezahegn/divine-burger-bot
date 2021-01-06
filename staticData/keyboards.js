@@ -3,7 +3,7 @@ const { menuItems } = require("./menuItems");
 const orderKeyboard = [
   [
     {
-      text: menuItems[1].mealTitle.toLocaleUpperCase(),
+      text: menuItems[1].mealTitle.toLocaleUpperCase() + "--------205Birr",
       callback_data: JSON.stringify({
         type: "order",
         meal_id: 1,
@@ -12,7 +12,7 @@ const orderKeyboard = [
   ],
   [
     {
-      text: menuItems[2].mealTitle.toLocaleUpperCase(),
+      text: menuItems[2].mealTitle.toLocaleUpperCase() + "--------186Birr",
       callback_data: JSON.stringify({
         type: "order",
         meal_id: 2,
@@ -21,7 +21,7 @@ const orderKeyboard = [
   ],
   [
     {
-      text: menuItems[3].mealTitle.toLocaleUpperCase(),
+      text: menuItems[3].mealTitle.toLocaleUpperCase() + "--------176Birr",
       callback_data: JSON.stringify({
         type: "order",
         meal_id: 3,
@@ -30,7 +30,7 @@ const orderKeyboard = [
   ],
   [
     {
-      text: menuItems[4].mealTitle.toLocaleUpperCase(),
+      text: menuItems[4].mealTitle.toLocaleUpperCase() + "--------150Birr",
       callback_data: JSON.stringify({
         type: "order",
         meal_id: 4,
@@ -39,7 +39,7 @@ const orderKeyboard = [
   ],
   [
     {
-      text: menuItems[5].mealTitle.toLocaleUpperCase(),
+      text: menuItems[5].mealTitle.toLocaleUpperCase() + "--------146Birr",
       callback_data: JSON.stringify({
         type: "order",
         meal_id: 5,
@@ -48,7 +48,7 @@ const orderKeyboard = [
   ],
   [
     {
-      text: menuItems[6].mealTitle.toLocaleUpperCase(),
+      text: menuItems[6].mealTitle.toLocaleUpperCase() + "--------120Birr",
       callback_data: JSON.stringify({
         type: "order",
         meal_id: 6,
@@ -57,7 +57,7 @@ const orderKeyboard = [
   ],
   [
     {
-      text: menuItems[7].mealTitle.toLocaleUpperCase(),
+      text: menuItems[7].mealTitle.toLocaleUpperCase() + "--------50Birr",
       callback_data: JSON.stringify({
         type: "order",
         meal_id: 7,

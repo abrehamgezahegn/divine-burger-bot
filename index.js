@@ -27,6 +27,7 @@ const { User, Order } = require("./schemas");
 mongoose.connect(process.env.DATABASE_URL, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
+  useFindAndModify: false,
 });
 
 const db = mongoose.connection;
@@ -119,7 +120,7 @@ const sendLocationPrompt = (msg) => {
             request_location: true,
           },
         ],
-        ["🏠 Home", "◀️ Back to order"],
+        ["🏠 Back to home", "◀️ Back to order"],
       ],
     },
   };
@@ -251,7 +252,6 @@ const sendOrderConfirmation = async (msg) => {
 };
 
 const updateOrderLocation = async (msg, type = "coord", address = "") => {
-  console.log("address", address);
   const orders = await Order.find().and({ userChatId: msg.chat.id });
   const order = orders[orders.length - 1];
 
