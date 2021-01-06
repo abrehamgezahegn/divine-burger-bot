@@ -49,6 +49,7 @@ const sendHomeMenuKeyboard = (
         ["📍 Location"],
         ["📷 Gallery", "📱 Contact"],
         ["🎖 Competitions", "💸 Deals and Discounts"],
+        ["Want a bot like this?"],
       ],
     },
   });
@@ -109,6 +110,16 @@ const sendContactInfo = (msg) => {
   bot.sendMessage(
     msg.chat.id,
     "🍔 Divine Burger 🧑‍🍳\n\n ☎️ +251965966465 \nig: @divineburger_ \ntwitter: @divineburger_  \n\n Feel free to contact us 😁."
+  );
+  setTimeout(() => {
+    sendDeveloperContact(msg);
+  }, 1000);
+};
+
+const sendDeveloperContact = (msg) => {
+  bot.sendMessage(
+    msg.chat.id,
+    "🧑‍💻 Developer Contact \n\n👨‍🦰 Abreham Gezahegn \n📱 +251913616046 \ngithub: abrehamgezahegn"
   );
 };
 
@@ -404,6 +415,9 @@ bot.on("message", (msg) => {
 
   if (msg.text === "◀️ Back to order") {
     // sendOrderKeyboard(msg);
+  }
+  if (msg.text === "Want a bot like this?") {
+    sendDeveloperContact(msg);
   }
 });
 
