@@ -111,16 +111,12 @@ const sendLocationPrompt = (msg) => {
     parse_mode: "Markdown",
     reply_markup: {
       one_time_keyboard: true,
+      remove_keyboard: true,
       keyboard: [
         [
           {
-            text: "📍 My location",
+            text: "📍 Share my location",
             request_location: true,
-          },
-        ],
-        [
-          {
-            text: "Other location",
           },
         ],
         ["🏠 Home", "◀️ Back to order"],
@@ -130,9 +126,50 @@ const sendLocationPrompt = (msg) => {
 
   bot.sendMessage(
     msg.chat.id,
-    "Where should we deliver your order?",
+    "Please share your location using the button in your keyboard.",
     locationOption
   );
+};
+
+const sendLocationOptions = (msg) => {
+  bot.sendMessage(msg.chat.id, "Where should we deliver your order?", {
+    reply_markup: {
+      inline_keyboard: [
+        [
+          {
+            text: "📍 My location",
+            callback_data: JSON.stringify({
+              type: "share_location",
+            }),
+          },
+        ],
+        [
+          {
+            text: "🗺 Other location",
+            callback_data: JSON.stringify({
+              type: "type_location",
+            }),
+          },
+        ],
+        [
+          {
+            text: "🍔 At Divine",
+            callback_data: JSON.stringify({
+              type: "order_at_divine",
+            }),
+          },
+        ],
+        [
+          {
+            text: "🚗 I will come an pick up (Drive-Thru )",
+            callback_data: JSON.stringify({
+              type: "drive_thru_order",
+            }),
+          },
+        ],
+      ],
+    },
+  });
 };
 
 const sendContactPrompt = (msg) => {
@@ -153,6 +190,122 @@ const sendContactPrompt = (msg) => {
   };
 
   bot.sendMessage(msg.chat.id, "How can we contact you?", contactOption);
+};
+
+const sendOrderConfirmation = async (msg) => {
+  const users = await User.find().and({ chatId: msg.chat.id });
+  const orders = await Order.find().and({ userChatId: msg.chat.id });
+  const order = orders[orders.length - 1];
+  const user = users[0];
+  const meal = menuItems[order.mealId];
+
+  bot.sendMessage(
+    msg.chat.id,
+    `   \n\n\n\n🛵 Order confirmation 🛵 \n\n🍔 ${order.mealTitle} \n💰 ${meal.price}Birr  \n📱 ${user.phoneNumber} \n📍 Pin on map \n\n`,
+    {
+      reply_markup: {
+        one_time_keyboard: true,
+        inline_keyboard: [
+          [
+            {
+              text: "✅ Confirm Order",
+              callback_data: JSON.stringify({
+                type: "confirm_order",
+              }),
+            },
+            {
+              text: "🙊   Cancel",
+              callback_data: JSON.stringify({
+                type: "cancel_order",
+              }),
+            },
+          ],
+        ],
+      },
+    }
+  );
+};
+
+const updateOrderLocation = async (msg) => {
+  const orders = await Order.find().and({ userChatId: msg.chat.id });
+  const order = orders[orders.length - 1];
+
+  await Order.findByIdAndUpdate(order._id, {
+    longitude: msg.location.longitude,
+    latitude: msg.location.latitude,
+  });
+};
+
+const placeOrder = (msg) => {
+  bot
+    .sendMessage(
+      msg.chat.id,
+      `Thank you ${msg.chat.first_name} 😁. Your order is through 🎊🎊🎊.`
+    )
+    .then(async () => {
+      const users = await User.find().and({ chatId: msg.chat.id });
+      const orders = await Order.find().and({ userChatId: msg.chat.id });
+      const order = orders[orders.length - 1];
+      const user = users[0];
+
+      await Order.findByIdAndUpdate(order._id, {
+        status: "Completed",
+      });
+
+      const getUserName = () => {
+        const userName = msg.chat.username;
+        if (userName) return `💬 @${userName}`;
+        else return "";
+      };
+
+      bot
+        .sendMessage(
+          process.env.TELEGRAM_GROUP_ID,
+          `   \n\n\n\n🛵 New order 🛵 \n\n🍔 ${order.mealTitle} \n🧔 ${
+            msg.chat.first_name
+          } \n📱 ${
+            user.phoneNumber
+          } \n📍 Pin on map \n${getUserName()} \n\n 👇👇👇`
+        )
+        .then(() => {
+          if (order.longitude) {
+            bot.sendLocation(
+              process.env.TELEGRAM_GROUP_ID,
+              order.latitude,
+              order.longitude
+            );
+          }
+        })
+        .then(() => {
+          bot.sendVideo(msg.chat.id, getRandomFreshPrinceGIF());
+        })
+        .then(() => {
+          setTimeout(() => {
+            bot.sendMessage(msg.chat.id, "Do you have another order?", {
+              reply_markup: {
+                one_time_keyboard: true,
+                inline_keyboard: [
+                  [
+                    {
+                      text: "Yes, show me some.",
+                      callback_data: JSON.stringify({
+                        type: "show_order_menu",
+                      }),
+                    },
+                    {
+                      text: "Nope",
+                      callback_data: JSON.stringify({
+                        type: "go_to_home",
+                      }),
+                    },
+                  ],
+                ],
+              },
+            });
+            sendHomeMenuKeyboard(msg, " ");
+          }, 1000);
+        });
+    });
 };
 
 bot.onText(/\/start/, (msg) => {
@@ -195,13 +348,13 @@ bot.onText(/contact/i, (msg) => {
 });
 
 bot.on("message", (msg) => {
-  console.log("msg", msg);
   if (msg.text === "◀️ Back to order") {
     // sendOrderKeyboard(msg);
   }
 });
 
 bot.on("callback_query", async (query) => {
+  console.log("ouuu", query.data);
   const data = JSON.parse(query.data);
   const chat = query.message.chat;
 
@@ -238,20 +391,30 @@ bot.on("callback_query", async (query) => {
         mealTitle: meal.mealTitle,
         mealId: meal.mealId,
         userChatId: chat.id,
+        status: "Incomplete",
       });
       await orderDb.save({ validateBeforeSave: true });
 
       const user = await User.find().and({ chatId: chat.id });
 
       if (user[0]) {
-        sendLocationPrompt(query.message);
+        sendLocationOptions(query.message);
       } else {
         sendContactPrompt(query.message);
       }
-
       break;
+    case "share_location":
+      sendLocationPrompt(query.message);
+      break;
+    case "confirm_order":
+      placeOrder(query.message);
+      break;
+
     case "show_order_menu":
       sendOrderKeyboard(query.message);
+      break;
+    case "go_to_home":
+      sendHomeMenuKeyboard(query.message);
       break;
   }
 });
@@ -269,44 +432,9 @@ bot.on("contact", async (msg) => {
 });
 
 bot.on("location", async (msg) => {
-  bot
-    .sendMessage(
-      msg.chat.id,
-      `Thank you ${msg.chat.first_name} 😁. Your order is through 🎊🎊🎊.`
-    )
-    .then(async () => {
-      const users = await User.find().and({ chatId: msg.chat.id });
-      const orders = await Order.find().and({ userChatId: msg.chat.id });
-      const order = orders[orders.length - 1];
-      const user = users[0];
-
-      const getUserName = () => {
-        const userName = msg.chat.username;
-        if (userName) return `💬 @${userName}`;
-        else return "";
-      };
-
-      bot
-        .sendMessage(
-          process.env.TELEGRAM_GROUP_ID,
-          `   \n\n\n\n🛵 New order 🛵 \n\n🍔 ${order.mealTitle} \n🧔 ${
-            msg.chat.first_name
-          } \n📱 ${user.phoneNumber} \n${getUserName()} \n\n 👇👇👇`
-        )
-        .then(() => {
-          bot.sendLocation(
-            process.env.TELEGRAM_GROUP_ID,
-            msg.location.latitude,
-            msg.location.longitude
-          );
-        })
-        .then(() => {
-          bot.sendVideo(msg.chat.id, getRandomFreshPrinceGIF());
-        })
-        .then(() => {
-          sendHomeMenuKeyboard(msg, "Do you have another order?");
-        });
-    });
+  updateOrderLocation(msg);
+  sendOrderConfirmation(msg);
+  sendHomeMenuKeyboard(msg);
 });
 
 console.log("server up and running");

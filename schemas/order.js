@@ -19,8 +19,8 @@ const orderSchema = new mongoose.Schema({
   longitude: {
     type: Number,
   },
-  fulfilled: {
-    type: Boolean,
+  status: {
+    type: String,
   },
 });
 
