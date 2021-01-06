@@ -114,11 +114,16 @@ const sendLocationPrompt = (msg) => {
       keyboard: [
         [
           {
-            text: "My location",
+            text: "📍 My location",
             request_location: true,
           },
         ],
-        ["Cancel"],
+        [
+          {
+            text: "Other location",
+          },
+        ],
+        ["🏠 Home", "◀️ Back to order"],
       ],
     },
   };
@@ -142,7 +147,7 @@ const sendContactPrompt = (msg) => {
             request_contact: true,
           },
         ],
-        ["Cancel"],
+        ["Home", "Cancel"],
       ],
     },
   };
@@ -154,6 +159,10 @@ bot.onText(/\/start/, (msg) => {
   sendHomeMenuKeyboard(msg);
 });
 
+bot.onText(/home/i, (msg) => {
+  sendHomeMenuKeyboard(msg);
+});
+
 bot.onText(/menu/i, (msg) => {
   sendMenuPicture(msg);
 });
@@ -162,7 +171,10 @@ bot.onText(/order/i, (msg) => {
   sendOrderKeyboard(msg);
 });
 
-bot.onText(/location/i, (msg) => {
+bot.onText(/📍 Location/, (msg) => {
+  sendLocation(msg);
+});
+bot.onText(/location/, (msg) => {
   sendLocation(msg);
 });
 
@@ -183,11 +195,9 @@ bot.onText(/contact/i, (msg) => {
 });
 
 bot.on("message", (msg) => {
-  if (msg.text === "Home") {
-    sendHomeMenuKeyboard(msg);
-  }
-  if (msg.text === "Cancel") {
-    sendOrderKeyboard(msg);
+  console.log("msg", msg);
+  if (msg.text === "◀️ Back to order") {
+    // sendOrderKeyboard(msg);
   }
 });
 
