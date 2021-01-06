@@ -44,7 +44,21 @@ const albumTwo = [
   },
 ];
 
+const outsideView = [
+  {
+    type: "photo",
+    media:
+      "https://res.cloudinary.com/de5awe7fs/image/upload/v1609099378/Divine/gallery/photo_2020-12-26_23-58-20.jpg",
+  },
+  {
+    type: "video",
+    media:
+      "https://res.cloudinary.com/de5awe7fs/video/upload/v1609099249/Divine/IMG_4182.mp4",
+  },
+];
+
 module.exports = {
   albumOne,
   albumTwo,
+  outsideView,
 };

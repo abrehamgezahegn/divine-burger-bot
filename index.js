@@ -18,7 +18,7 @@ if (process.env.NODE_ENV === "production") {
 const mongoose = require("mongoose");
 
 const { menuItems } = require("./staticData/menuItems");
-const { albumOne, albumTwo } = require("./staticData/gallery");
+const { albumOne, albumTwo, outsideView } = require("./staticData/gallery");
 const { orderKeyboard } = require("./staticData/keyboards");
 const { getRandomFreshPrinceGIF } = require("./utils/getRandomFreshPrinceGif");
 
@@ -71,19 +71,24 @@ const sendMenuPicture = (msg) => {
 
 const sendLocation = (msg) => {
   bot.sendLocation(msg.chat.id, 8.998793301318967, 38.78529252962021);
-  bot.sendMessage(msg.chat.id, "📍 Bole new building behind Sheger building", {
-    reply_markup: {
-      inline_keyboard: [
-        [
-          {
-            text: "Open in maps",
-            url:
-              "https://www.google.com/maps/place/Divine+Burger/@8.9987837,38.7831049,17z/data=!3m1!4b1!4m5!3m4!1s0x164b859bbc283e9b:0xe2840693f0f71555!8m2!3d8.9987784!4d38.7852989",
-          },
+  bot.sendMessage(
+    msg.chat.id,
+    "📍 Bole new building behind Sheger building, above Dashen bank.",
+    {
+      reply_markup: {
+        inline_keyboard: [
+          [
+            {
+              text: "📷 Outside view",
+              callback_data: JSON.stringify({
+                type: "send_outside_view",
+              }),
+            },
+          ],
         ],
-      ],
-    },
-  });
+      },
+    }
+  );
 };
 
 const sendCompetitions = (msg) => {
@@ -105,6 +110,10 @@ const sendContactInfo = (msg) => {
     msg.chat.id,
     "🍔 Divine Burger 🧑‍🍳\n\n ☎️ +251965966465 \nig: @divineburger_ \ntwitter: @divineburger_  \n\n Feel free to contact us 😁."
   );
+};
+
+const sendOutsideView = (msg) => {
+  bot.sendMediaGroup(msg.chat.id, outsideView);
 };
 
 const sendLocationPrompt = (msg) => {
@@ -471,6 +480,9 @@ bot.on("callback_query", async (query) => {
 
     case "show_order_menu":
       sendOrderKeyboard(query.message);
+      break;
+    case "send_outside_view":
+      sendOutsideView(query.message);
       break;
 
     case "go_to_home":
