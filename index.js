@@ -289,6 +289,11 @@ const placeOrder = (msg) => {
         else return "";
       };
 
+      const getHands = () => {
+        if (order.longitude) return "👇👇👇";
+        return "";
+      };
+
       bot
         .sendMessage(
           process.env.TELEGRAM_GROUP_ID,
@@ -296,7 +301,7 @@ const placeOrder = (msg) => {
             msg.chat.first_name
           } \n📱 ${user.phoneNumber} \n📍 ${
             order.address
-          } \n${getUserName()} \n\n 👇👇👇`
+          } \n${getUserName()} \n\n ${getHands()}`
         )
         .then(() => {
           if (order.longitude) {
@@ -333,7 +338,6 @@ const placeOrder = (msg) => {
                 ],
               },
             });
-            // sendHomeMenuKeyboard(msg, "Let me know if you ha");
           }, 1000);
         });
     });
