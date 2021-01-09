@@ -46,6 +46,7 @@ const sendHomeMenuKeyboard = (
       keyboard: [
         ["📖 Menu"],
         ["🍔 Order"],
+        ["🛒 Cart"],
         ["📍 Location"],
         ["📷 Gallery", "📱 Contact"],
         ["🎖 Competitions", "💸 Deals and Discounts"],
@@ -228,6 +229,134 @@ const acceptLocationDesc = (msg) => {
   });
 };
 
+const addItemToCart = async (msg, meal) => {
+  const users = await User.find().and({ chatId: msg.chat.id });
+  const user = users[0];
+
+  const cart = [
+    ...user.cart,
+    { mealTitle: meal.mealTitle, mealId: meal.mealId, price: meal.price },
+  ];
+
+  await User.findByIdAndUpdate(user._id, { cart });
+};
+
+const removeItemFromCart = async (msg, cartItemIndex) => {
+  const users = await User.find().and({ chatId: msg.chat.id });
+  const user = users[0];
+  const item = user.cart[cartItemIndex];
+
+  const filtered = user.cart.filter((_, index) => index !== cartItemIndex);
+  await User.findByIdAndUpdate(user._id, { cart: filtered });
+  bot.sendMessage(
+    msg.chat.id,
+    `*${item.mealTitle}* has been removed from your cart`,
+    { parse_mode: "Markdown" }
+  );
+  showCart(msg);
+};
+
+const showCart = async (msg) => {
+  const users = await User.find().and({ chatId: msg.chat.id });
+  const user = users[0];
+
+  if (user.cart.length === 0) {
+    bot.sendMessage(
+      msg.chat.id,
+      "Your cart is empty. Go to orders to add items."
+    );
+    return;
+  }
+
+  let message = `*Your cart 🛒*\n\n`;
+  let mealPrice = 0;
+  const takeawayCharge = user.cart.length * 10;
+  let keyboardItems = [];
+
+  user.cart.forEach((item, index) => {
+    mealPrice = mealPrice + item.price;
+    const text = `🍔 1 ${item.mealTitle} \n💰 ${item.price}Birr \n`;
+    const keyboardItem = {
+      text: `${item.mealTitle} ❌`,
+      callback_data: JSON.stringify({
+        type: "remove_cart_item",
+        cartItemIndex: index,
+      }),
+    };
+    keyboardItems.push([keyboardItem]);
+    message = message.concat(text);
+    if (index < user.cart.length - 1)
+      message = message.concat(`---------------------\n`);
+  });
+  message = message.concat(`-----------------------------------------\n\n`);
+
+  message = message.concat(`Total = ${mealPrice}Birr \n`);
+  message = message.concat(`Takeaway charge = ${takeawayCharge}Birr \n`);
+  message = message.concat(`Delivery rate = 10birr/km \n`);
+  message = message.concat(
+    `*Grand total = ${mealPrice + takeawayCharge}Birr + delivery fee*`
+  );
+
+  [[{}], [{}], [{}]];
+  let cartKeyboard = {
+    parse_mode: "Markdown",
+
+    reply_markup: {
+      one_time_keyboard: true,
+      inline_keyboard: [
+        ...keyboardItems,
+        [
+          {
+            text: "✅ Confirm Order",
+            callback_data: JSON.stringify({
+              type: "confirm_order___",
+            }),
+          },
+          {
+            text: "🍔 Order more",
+            callback_data: JSON.stringify({
+              type: "show_order_menu",
+            }),
+          },
+        ],
+      ],
+    },
+  };
+
+  bot.sendMessage(msg.chat.id, message, cartKeyboard);
+};
+
+const sendItemAddedMessage = (msg, mealTitle) => {
+  const cartOptions = {
+    parse_mode: "Markdown",
+    reply_markup: {
+      one_time_keyboard: true,
+      inline_keyboard: [
+        [
+          {
+            text: "🛒 Show cart",
+            callback_data: JSON.stringify({
+              type: "show_cart",
+            }),
+          },
+          {
+            text: "🍔 Order more",
+            callback_data: JSON.stringify({
+              type: "show_order_menu",
+            }),
+          },
+        ],
+      ],
+    },
+  };
+
+  bot.sendMessage(
+    msg.chat.id,
+    `1 *${mealTitle}* added to your cart 🚀. You can checkout or add more items to your cart`,
+    cartOptions
+  );
+};
+
 const sendOrderConfirmation = async (msg) => {
   const users = await User.find().and({ chatId: msg.chat.id });
   const orders = await Order.find().and({ userChatId: msg.chat.id });
@@ -307,7 +436,7 @@ const placeOrder = (msg) => {
       const user = users[0];
 
       await Order.findByIdAndUpdate(order._id, {
-        status: "Completed",
+        status: "Pending",
       });
 
       const getUserName = () => {
@@ -425,6 +554,10 @@ bot.on("message", (msg) => {
     }
   }
 
+  if (msg.text === "🛒 Cart") {
+    showCart(msg);
+  }
+
   if (msg.text === "◀️ Back to order") {
     // sendOrderKeyboard(msg);
   }
@@ -446,9 +579,9 @@ bot.on("callback_query", async (query) => {
             inline_keyboard: [
               [
                 {
-                  text: "🍟 Place order",
+                  text: "🍟 Add to cart",
                   callback_data: JSON.stringify({
-                    type: "place_order",
+                    type: "add_to_cart",
                     meal_id: data.meal_id,
                   }),
                 },
@@ -500,6 +633,19 @@ bot.on("callback_query", async (query) => {
       updateOrderLocation(query.message, "address", "Drive-thru");
       sendOrderConfirmation(query.message);
 
+      break;
+    case "add_to_cart":
+      const { mealTitle, mealId, price } = menuItems[data.meal_id];
+      addItemToCart(query.message, { mealTitle, mealId, price });
+      sendItemAddedMessage(query.message, mealTitle);
+      break;
+
+    case "remove_cart_item":
+      removeItemFromCart(query.message, data.cartItemIndex);
+
+      break;
+    case "show_cart":
+      showCart(query.message);
       break;
 
     case "confirm_order":
