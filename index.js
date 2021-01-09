@@ -160,6 +160,15 @@ const sendLocationPrompt = (msg) => {
   );
 };
 
+const createUser = async (msg) => {
+  const userDb = new User({
+    firstName: msg.chat.first_name,
+    userName: msg.chat.username || "NO_USER_NAME",
+    chatId: msg.chat.id,
+  });
+  await userDb.save({ validateBeforeSave: true });
+};
+
 const sendLocationOptions = (msg) => {
   bot.sendMessage(msg.chat.id, "Where should we deliver your order?", {
     reply_markup: {
@@ -204,6 +213,7 @@ const sendLocationOptions = (msg) => {
 const sendContactPrompt = (msg) => {
   const contactOption = {
     parse_mode: "Markdown",
+    one_time_keyboard: true,
     reply_markup: {
       one_time_keyboard: true,
       keyboard: [
@@ -246,6 +256,15 @@ const removeItemFromCart = async (msg, cartItemIndex) => {
   const user = users[0];
   const item = user.cart[cartItemIndex];
 
+  if (user.cart.length === 0) {
+    bot.sendMessage(
+      msg.chat.id,
+      `You have already removed that item from your cart`,
+      { parse_mode: "Markdown" }
+    );
+    return;
+  }
+
   const filtered = user.cart.filter((_, index) => index !== cartItemIndex);
   await User.findByIdAndUpdate(user._id, { cart: filtered });
   bot.sendMessage(
@@ -253,7 +272,40 @@ const removeItemFromCart = async (msg, cartItemIndex) => {
     `*${item.mealTitle}* has been removed from your cart`,
     { parse_mode: "Markdown" }
   );
-  showCart(msg);
+
+  if (filtered.length > 0) showCart(msg);
+};
+
+const emptyCart = async (msg) => {
+  const users = await User.find().and({ chatId: msg.chat.id });
+  const user = users[0];
+
+  await User.findByIdAndUpdate(user._id, { cart: [] });
+};
+
+const generateOrderDetails = (user) => {
+  let message = ``;
+  let mealPrice = 0;
+  const takeawayCharge = user.cart.length * 10;
+
+  user.cart.forEach((item, index) => {
+    mealPrice = mealPrice + item.price;
+    const text = `🍔 1 ${item.mealTitle} \n💰 ${item.price}Birr \n`;
+
+    message = message.concat(text);
+    if (index < user.cart.length - 1)
+      message = message.concat(`---------------------\n`);
+  });
+  message = message.concat(`------------------------------------\n\n`);
+
+  message = message.concat(`Total = ${mealPrice}Birr \n`);
+  message = message.concat(`Takeaway charge = ${takeawayCharge}Birr \n`);
+  message = message.concat(`Delivery rate = 10birr/km \n`);
+  message = message.concat(
+    `*Grand total = ${mealPrice + takeawayCharge}Birr + delivery fee*`
+  );
+
+  return message;
 };
 
 const showCart = async (msg) => {
@@ -268,14 +320,12 @@ const showCart = async (msg) => {
     return;
   }
 
-  let message = `*Your cart 🛒*\n\n`;
-  let mealPrice = 0;
-  const takeawayCharge = user.cart.length * 10;
-  let keyboardItems = [];
+  const title = `*Your cart 🛒*\n\n`;
+  const messageBody = generateOrderDetails(user);
+  const message = title + messageBody;
 
+  let keyboardItems = [];
   user.cart.forEach((item, index) => {
-    mealPrice = mealPrice + item.price;
-    const text = `🍔 1 ${item.mealTitle} \n💰 ${item.price}Birr \n`;
     const keyboardItem = {
       text: `${item.mealTitle} ❌`,
       callback_data: JSON.stringify({
@@ -284,20 +334,8 @@ const showCart = async (msg) => {
       }),
     };
     keyboardItems.push([keyboardItem]);
-    message = message.concat(text);
-    if (index < user.cart.length - 1)
-      message = message.concat(`---------------------\n`);
   });
-  message = message.concat(`-----------------------------------------\n\n`);
 
-  message = message.concat(`Total = ${mealPrice}Birr \n`);
-  message = message.concat(`Takeaway charge = ${takeawayCharge}Birr \n`);
-  message = message.concat(`Delivery rate = 10birr/km \n`);
-  message = message.concat(
-    `*Grand total = ${mealPrice + takeawayCharge}Birr + delivery fee*`
-  );
-
-  [[{}], [{}], [{}]];
   let cartKeyboard = {
     parse_mode: "Markdown",
 
@@ -307,9 +345,9 @@ const showCart = async (msg) => {
         ...keyboardItems,
         [
           {
-            text: "✅ Confirm Order",
+            text: "✅ Place Order",
             callback_data: JSON.stringify({
-              type: "confirm_order___",
+              type: "place_order",
             }),
           },
           {
@@ -362,7 +400,6 @@ const sendOrderConfirmation = async (msg) => {
   const orders = await Order.find().and({ userChatId: msg.chat.id });
   const order = orders[orders.length - 1];
   const user = users[0];
-  const meal = menuItems[order.mealId];
 
   let msgReplyMarkup = {};
   let locationReplyMarkup = {
@@ -392,7 +429,7 @@ const sendOrderConfirmation = async (msg) => {
 
   bot.sendMessage(
     msg.chat.id,
-    `   \n\n\n\n🛵 Order confirmation 🛵 \n\n🍔 ${order.mealTitle} \n💰 ${meal.price}Birr  \n📱 ${user.phoneNumber} \n📍 ${order.address} \n\n`,
+    `   \n\n\n\n🛵 Delivery details 🛵 \n📱 ${user.phoneNumber} \n📍 ${order.address} \n\n`,
     msgReplyMarkup
   );
 
@@ -423,7 +460,7 @@ const updateOrderLocation = async (msg, type = "coord", address = "") => {
   }
 };
 
-const placeOrder = (msg) => {
+const confirmOrder = (msg) => {
   bot
     .sendMessage(
       msg.chat.id,
@@ -437,6 +474,7 @@ const placeOrder = (msg) => {
 
       await Order.findByIdAndUpdate(order._id, {
         status: "Pending",
+        cart: user.cart,
       });
 
       const getUserName = () => {
@@ -450,16 +488,20 @@ const placeOrder = (msg) => {
         return "";
       };
 
+      const orderDetail = generateOrderDetails(user);
+
       bot
         .sendMessage(
           process.env.TELEGRAM_GROUP_ID,
-          `   \n\n\n\n🛵 New order 🛵 \n\n🍔 ${order.mealTitle} \n🧔 ${
+          `   \n\n\n\n🛵 New order 🛵 \n\n${orderDetail} \n\n🧔 ${
             msg.chat.first_name
           } \n📱 ${user.phoneNumber} \n📍 ${
             order.address
-          } \n${getUserName()} \n\n ${getHands()}`
+          } \n${getUserName()} \n\n ${getHands()}`,
+          { parse_mode: "Markdown" }
         )
         .then(() => {
+          emptyCart(msg);
           if (order.longitude) {
             bot.sendLocation(
               process.env.TELEGRAM_GROUP_ID,
@@ -479,7 +521,7 @@ const placeOrder = (msg) => {
                 inline_keyboard: [
                   [
                     {
-                      text: "Yes, show me some.",
+                      text: "Yes",
                       callback_data: JSON.stringify({
                         type: "show_order_menu",
                       }),
@@ -500,6 +542,7 @@ const placeOrder = (msg) => {
 };
 
 bot.onText(/\/start/, (msg) => {
+  createUser(msg);
   sendHomeMenuKeyboard(msg);
 });
 
@@ -599,11 +642,7 @@ bot.on("callback_query", async (query) => {
       break;
     }
     case "place_order":
-      const meal = menuItems[data.meal_id];
-
       const orderDb = new Order({
-        mealTitle: meal.mealTitle,
-        mealId: meal.mealId,
         userChatId: chat.id,
         status: "Incomplete",
       });
@@ -611,7 +650,15 @@ bot.on("callback_query", async (query) => {
 
       const user = await User.find().and({ chatId: chat.id });
 
-      if (user[0]) {
+      if (user[0].cart.length === 0) {
+        bot.sendMessage(
+          query.message.chat.id,
+          "Your cart is empty. Go to orders to add items."
+        );
+        break;
+      }
+
+      if (user[0].phoneNumber) {
         sendLocationOptions(query.message);
       } else {
         sendContactPrompt(query.message);
@@ -642,14 +689,19 @@ bot.on("callback_query", async (query) => {
 
     case "remove_cart_item":
       removeItemFromCart(query.message, data.cartItemIndex);
-
+      break;
+    case "empty_cart":
+      emptyCart(query.message);
+      bot.sendMessage(query.message.chat.id, `Your cart has been emptied.`, {
+        parse_mode: "Markdown",
+      });
       break;
     case "show_cart":
       showCart(query.message);
       break;
 
     case "confirm_order":
-      placeOrder(query.message);
+      confirmOrder(query.message);
       break;
 
     case "show_order_menu":
@@ -666,14 +718,12 @@ bot.on("callback_query", async (query) => {
 });
 
 bot.on("contact", async (msg) => {
-  const userDb = new User({
-    firstName: msg.chat.first_name,
-    userName: msg.chat.username || "NO_USER_NAME",
-    phoneNumber: msg.contact.phone_number,
-    chatId: msg.chat.id,
-  });
-  await userDb.save({ validateBeforeSave: true });
+  const users = await User.find().and({ chatId: msg.chat.id });
+  const user = users[0];
 
+  await User.findByIdAndUpdate(user._id, {
+    phoneNumber: msg.contact.phone_number,
+  });
   sendLocationOptions(msg);
 });
 

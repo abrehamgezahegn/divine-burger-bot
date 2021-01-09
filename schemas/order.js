@@ -1,14 +1,7 @@
 const mongoose = require("mongoose");
+const { menuItemSchema } = require("./user");
 
 const orderSchema = new mongoose.Schema({
-  mealTitle: {
-    type: String,
-    required: true,
-  },
-  mealId: {
-    type: Number,
-    required: true,
-  },
   userChatId: {
     type: String,
     res: "User",
@@ -26,6 +19,7 @@ const orderSchema = new mongoose.Schema({
     type: String,
     enum: ["Incomplete", "Pending", "Delivered"],
   },
+  cart: [menuItemSchema],
 });
 
 const Order = mongoose.model("Order", orderSchema);
