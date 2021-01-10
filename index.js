@@ -49,7 +49,7 @@ const sendHomeMenuKeyboard = (
         ["🛒 Cart"],
         ["📍 Location"],
         ["📷 Gallery", "📱 Contact"],
-        ["🎖 Competitions", "💸 Deals and Discounts"],
+        ["🎖 Competitions", "🎇 Events"],
         ["Want a bot like this?"],
       ],
     },
@@ -67,7 +67,21 @@ const sendOrderKeyboard = (msg) => {
 const sendMenuPicture = (msg) => {
   bot.sendPhoto(
     msg.chat.id,
-    "https://res.cloudinary.com/de5awe7fs/image/upload/v1609099462/Divine/photo_2020-12-27_23-04-10.jpg"
+    "https://res.cloudinary.com/de5awe7fs/image/upload/v1609099462/Divine/photo_2020-12-27_23-04-10.jpg",
+    {
+      reply_markup: {
+        inline_keyboard: [
+          [
+            {
+              text: "🍔 Order",
+              callback_data: JSON.stringify({
+                type: "show_order_menu",
+              }),
+            },
+          ],
+        ],
+      },
+    }
   );
 };
 
@@ -94,11 +108,14 @@ const sendLocation = (msg) => {
 };
 
 const sendCompetitions = (msg) => {
-  bot.sendMessage(msg.chat.id, "No ongoing competitions :(. Stay tuned");
+  bot.sendMessage(
+    msg.chat.id,
+    "No upcoming or ongoing competitions for now :(. Stay tuned"
+  );
 };
 
-const sendDealsAndDiscounts = (msg) => {
-  bot.sendMessage(msg.chat.id, "No ongoing deals or discounts :(.");
+const sendEvents = (msg) => {
+  bot.sendMessage(msg.chat.id, "No upcoming or ongoing events for now :(.");
 };
 
 const sendGallery = (msg) => {
@@ -160,11 +177,18 @@ const sendLocationPrompt = (msg) => {
   );
 };
 
-const createUser = async (msg) => {
+const createUser = async (msg, cart = []) => {
+  const users = await User.find().and({ chatId: msg.chat.id });
+  const user = users[0];
+  if (user) {
+    return;
+  }
+
   const userDb = new User({
     firstName: msg.chat.first_name,
     userName: msg.chat.username || "NO_USER_NAME",
     chatId: msg.chat.id,
+    cart,
   });
   await userDb.save({ validateBeforeSave: true });
 };
@@ -242,11 +266,18 @@ const acceptLocationDesc = (msg) => {
 const addItemToCart = async (msg, meal) => {
   const users = await User.find().and({ chatId: msg.chat.id });
   const user = users[0];
+  const item = {
+    mealTitle: meal.mealTitle,
+    mealId: meal.mealId,
+    price: meal.price,
+  };
 
-  const cart = [
-    ...user.cart,
-    { mealTitle: meal.mealTitle, mealId: meal.mealId, price: meal.price },
-  ];
+  if (!user) {
+    createUser(msg, [item]);
+    return;
+  }
+
+  const cart = [...user.cart, item];
 
   await User.findByIdAndUpdate(user._id, { cart });
 };
@@ -413,12 +444,6 @@ const sendOrderConfirmation = async (msg) => {
               type: "confirm_order",
             }),
           },
-          {
-            text: "🙊 Cancel",
-            callback_data: JSON.stringify({
-              type: "cancel_order",
-            }),
-          },
         ],
       ],
     },
@@ -489,7 +514,6 @@ const confirmOrder = (msg) => {
       };
 
       const orderDetail = generateOrderDetails(user);
-
       bot
         .sendMessage(
           process.env.TELEGRAM_GROUP_ID,
@@ -497,8 +521,7 @@ const confirmOrder = (msg) => {
             msg.chat.first_name
           } \n📱 ${user.phoneNumber} \n📍 ${
             order.address
-          } \n${getUserName()} \n\n ${getHands()}`,
-          { parse_mode: "Markdown" }
+          } \n${getUserName()} \n\n ${getHands()}`
         )
         .then(() => {
           emptyCart(msg);
@@ -578,8 +601,8 @@ bot.onText(/competitions/i, (msg) => {
   sendCompetitions(msg);
 });
 
-bot.onText(/deals and discounts/gi, (msg) => {
-  sendDealsAndDiscounts(msg);
+bot.onText(/events/gi, (msg) => {
+  sendEvents(msg);
 });
 
 bot.onText(/contact/i, (msg) => {
