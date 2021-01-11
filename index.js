@@ -705,8 +705,7 @@ bot.on("callback_query", async (query) => {
       const user = await User.find().and({ chatId: chat.id });
 
       if (user[0].cart.length === 0) {
-        sendEmptyCartMessage(msg);
-
+        sendEmptyCartMessage(query.message);
         break;
       }
 
