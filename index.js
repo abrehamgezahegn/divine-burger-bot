@@ -492,10 +492,28 @@ const updateOrderLocation = async (msg, type = "coord", address = "") => {
 
 const confirmOrder = (msg) => {
   bot
-    .sendMessage(
-      msg.chat.id,
-      `Thank you ${msg.chat.first_name} 😁. Your order is through 🎊🎊🎊.`
-    )
+    .sendVideo(msg.chat.id, getRandomFreshPrinceGIF(), {
+      caption: `Thank you ${msg.chat.first_name} 😁. Your order is through 🎊🎊🎊.\n\nDo you have another order?`,
+      reply_markup: {
+        one_time_keyboard: true,
+        inline_keyboard: [
+          [
+            {
+              text: "Yes",
+              callback_data: JSON.stringify({
+                type: "show_order_menu",
+              }),
+            },
+            {
+              text: "Nope",
+              callback_data: JSON.stringify({
+                type: "go_to_home",
+              }),
+            },
+          ],
+        ],
+      },
+    })
     .then(async () => {
       const orders = await Order.find().and({ userChatId: msg.chat.id });
       const order = orders[orders.length - 1];
@@ -536,34 +554,6 @@ const confirmOrder = (msg) => {
               order.longitude
             );
           }
-        })
-        .then(() => {
-          bot.sendVideo(msg.chat.id, getRandomFreshPrinceGIF());
-        })
-        .then(() => {
-          setTimeout(() => {
-            bot.sendMessage(msg.chat.id, "Do you have another order?", {
-              reply_markup: {
-                one_time_keyboard: true,
-                inline_keyboard: [
-                  [
-                    {
-                      text: "Yes",
-                      callback_data: JSON.stringify({
-                        type: "show_order_menu",
-                      }),
-                    },
-                    {
-                      text: "Nope",
-                      callback_data: JSON.stringify({
-                        type: "go_to_home",
-                      }),
-                    },
-                  ],
-                ],
-              },
-            });
-          }, 1000);
         });
     });
 };
