@@ -68,6 +68,7 @@ const sendMenuPicture = (msg) => {
   bot.sendPhoto(
     msg.chat.id,
     "https://res.cloudinary.com/de5awe7fs/image/upload/v1609099462/Divine/photo_2020-12-27_23-04-10.jpg",
+
     {
       reply_markup: {
         inline_keyboard: [
@@ -190,7 +191,17 @@ const createUser = async (msg, cart = []) => {
     chatId: msg.chat.id,
     cart,
   });
-  await userDb.save({ validateBeforeSave: true });
+  const newUser = await userDb.save({ validateBeforeSave: true });
+  return newUser;
+};
+
+const getUser = async (msg) => {
+  const users = await User.find().and({ chatId: msg.chat.id });
+  const user = users[0];
+  if (!user) {
+    return createUser(msg);
+  }
+  return user;
 };
 
 const sendLocationOptions = (msg) => {
@@ -264,8 +275,7 @@ const acceptLocationDesc = (msg) => {
 };
 
 const addItemToCart = async (msg, meal) => {
-  const users = await User.find().and({ chatId: msg.chat.id });
-  const user = users[0];
+  const user = await getUser(msg);
   const item = {
     mealTitle: meal.mealTitle,
     mealId: meal.mealId,
@@ -283,8 +293,7 @@ const addItemToCart = async (msg, meal) => {
 };
 
 const removeItemFromCart = async (msg, cartItemIndex) => {
-  const users = await User.find().and({ chatId: msg.chat.id });
-  const user = users[0];
+  const user = await getUser(msg);
   const item = user.cart[cartItemIndex];
 
   if (user.cart.length === 0) {
@@ -308,9 +317,7 @@ const removeItemFromCart = async (msg, cartItemIndex) => {
 };
 
 const emptyCart = async (msg) => {
-  const users = await User.find().and({ chatId: msg.chat.id });
-  const user = users[0];
-
+  const user = await getUser(msg);
   await User.findByIdAndUpdate(user._id, { cart: [] });
 };
 
@@ -340,8 +347,7 @@ const generateOrderDetails = (user) => {
 };
 
 const showCart = async (msg) => {
-  const users = await User.find().and({ chatId: msg.chat.id });
-  const user = users[0];
+  const user = await getUser(msg);
 
   if (user.cart.length === 0) {
     bot.sendMessage(
@@ -427,10 +433,9 @@ const sendItemAddedMessage = (msg, mealTitle) => {
 };
 
 const sendOrderConfirmation = async (msg) => {
-  const users = await User.find().and({ chatId: msg.chat.id });
+  const user = await getUser(msg);
   const orders = await Order.find().and({ userChatId: msg.chat.id });
   const order = orders[orders.length - 1];
-  const user = users[0];
 
   let msgReplyMarkup = {};
   let locationReplyMarkup = {
@@ -492,10 +497,9 @@ const confirmOrder = (msg) => {
       `Thank you ${msg.chat.first_name} 😁. Your order is through 🎊🎊🎊.`
     )
     .then(async () => {
-      const users = await User.find().and({ chatId: msg.chat.id });
       const orders = await Order.find().and({ userChatId: msg.chat.id });
       const order = orders[orders.length - 1];
-      const user = users[0];
+      const user = await getUser(msg);
 
       await Order.findByIdAndUpdate(order._id, {
         status: "Pending",
@@ -638,30 +642,28 @@ bot.on("callback_query", async (query) => {
 
   switch (data.type) {
     case "order": {
-      bot.sendPhoto(chat.id, menuItems[data.meal_id].cover);
-      setTimeout(() => {
-        bot.sendMessage(chat.id, menuItems[data.meal_id].mealDetail, {
-          reply_markup: {
-            inline_keyboard: [
-              [
-                {
-                  text: "🍟 Add to cart",
-                  callback_data: JSON.stringify({
-                    type: "add_to_cart",
-                    meal_id: data.meal_id,
-                  }),
-                },
-                {
-                  text: "🙉 Cancel",
-                  callback_data: JSON.stringify({
-                    type: "show_order_menu",
-                  }),
-                },
-              ],
+      bot.sendPhoto(chat.id, menuItems[data.meal_id].cover, {
+        caption: menuItems[data.meal_id].mealDetail,
+        reply_markup: {
+          inline_keyboard: [
+            [
+              {
+                text: "🍟 Add to cart",
+                callback_data: JSON.stringify({
+                  type: "add_to_cart",
+                  meal_id: data.meal_id,
+                }),
+              },
+              {
+                text: "🙉 Cancel",
+                callback_data: JSON.stringify({
+                  type: "show_order_menu",
+                }),
+              },
             ],
-          },
-        });
-      }, 200);
+          ],
+        },
+      });
       break;
     }
     case "place_order":
@@ -741,9 +743,7 @@ bot.on("callback_query", async (query) => {
 });
 
 bot.on("contact", async (msg) => {
-  const users = await User.find().and({ chatId: msg.chat.id });
-  const user = users[0];
-
+  const user = await getUser(msg);
   await User.findByIdAndUpdate(user._id, {
     phoneNumber: msg.contact.phone_number,
   });
