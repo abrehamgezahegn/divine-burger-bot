@@ -213,6 +213,7 @@ const sendLocationOptions = (msg) => {
             text: "📍 My location",
             callback_data: JSON.stringify({
               type: "share_location",
+              deleteKeyboard: true,
             }),
           },
         ],
@@ -221,6 +222,7 @@ const sendLocationOptions = (msg) => {
             text: "🗺 Other location",
             callback_data: JSON.stringify({
               type: "accept_location_desc",
+              deleteKeyboard: true,
             }),
           },
         ],
@@ -229,6 +231,7 @@ const sendLocationOptions = (msg) => {
             text: "🍔 At Divine",
             callback_data: JSON.stringify({
               type: "order_at_divine",
+              deleteKeyboard: true,
             }),
           },
         ],
@@ -237,6 +240,7 @@ const sendLocationOptions = (msg) => {
             text: "🚗 I will come an pick up (Drive-Thru )",
             callback_data: JSON.stringify({
               type: "drive_thru_order",
+              deleteKeyboard: true,
             }),
           },
         ],
@@ -272,6 +276,27 @@ const acceptLocationDesc = (msg) => {
       force_reply: true,
     },
   });
+};
+
+const sendEmptyCartMessage = (msg) => {
+  bot.sendMessage(
+    msg.chat.id,
+    "Your cart is empty. Go to orders to add items.",
+    {
+      reply_markup: {
+        inline_keyboard: [
+          [
+            {
+              text: "🍔 Order",
+              callback_data: JSON.stringify({
+                type: "show_order_menu",
+              }),
+            },
+          ],
+        ],
+      },
+    }
+  );
 };
 
 const addItemToCart = async (msg, meal) => {
@@ -350,10 +375,8 @@ const showCart = async (msg) => {
   const user = await getUser(msg);
 
   if (user.cart.length === 0) {
-    bot.sendMessage(
-      msg.chat.id,
-      "Your cart is empty. Go to orders to add items."
-    );
+    sendEmptyCartMessage(msg);
+
     return;
   }
 
@@ -490,7 +513,15 @@ const updateOrderLocation = async (msg, type = "coord", address = "") => {
   }
 };
 
-const confirmOrder = (msg) => {
+const confirmOrder = async (msg) => {
+  const user = await getUser(msg);
+
+  if (user.cart.length === 0) {
+    sendEmptyCartMessage(msg);
+
+    return;
+  }
+
   bot
     .sendVideo(msg.chat.id, getRandomFreshPrinceGIF(), {
       caption: `Thank you ${msg.chat.first_name} 😁. Your order is through 🎊🎊🎊.\n\nDo you have another order?`,
@@ -513,6 +544,9 @@ const confirmOrder = (msg) => {
           ],
         ],
       },
+    })
+    .then((_) => {
+      bot.deleteMessage(msg.chat.id, msg.message_id);
     })
     .then(async () => {
       const orders = await Order.find().and({ userChatId: msg.chat.id });
@@ -630,6 +664,10 @@ bot.on("callback_query", async (query) => {
   const data = JSON.parse(query.data);
   const chat = query.message.chat;
 
+  bot.answerCallbackQuery(query.id);
+  if (data.deleteKeyboard) {
+    bot.deleteMessage(query.message.chat.id, query.message.message_id);
+  }
   switch (data.type) {
     case "order": {
       bot.sendPhoto(chat.id, menuItems[data.meal_id].cover, {
@@ -654,6 +692,7 @@ bot.on("callback_query", async (query) => {
           ],
         },
       });
+
       break;
     }
     case "place_order":
@@ -666,10 +705,8 @@ bot.on("callback_query", async (query) => {
       const user = await User.find().and({ chatId: chat.id });
 
       if (user[0].cart.length === 0) {
-        bot.sendMessage(
-          query.message.chat.id,
-          "Your cart is empty. Go to orders to add items."
-        );
+        sendEmptyCartMessage(msg);
+
         break;
       }
 
