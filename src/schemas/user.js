@@ -18,7 +18,6 @@ const menuItemSchema = new mongoose.Schema({
 const userSchema = new mongoose.Schema({
   firstName: {
     type: String,
-    required: true,
   },
   userName: {
     type: String,
