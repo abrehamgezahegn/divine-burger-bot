@@ -4,22 +4,9 @@ require("dotenv").config();
 const TelegramBot = require("node-telegram-bot-api");
 const express = require("express");
 const bodyParser = require("body-parser");
-
-const token = process.env.BOT_TOKEN;
-let bot;
-
-if (process.env.NODE_ENV === "production") {
-  bot = new TelegramBot(token);
-  bot.setWebHook(process.env.HEROKU_URL + bot.token);
-} else {
-  bot = new TelegramBot(token, { polling: true });
-}
-
 const mongoose = require("mongoose");
 
 const { albumOne, albumTwo } = require("./staticData/gallery");
-
-const { User } = require("./schemas");
 
 const { sendMenuPicture } = require("./controllers/menu/sendMenuPicture");
 const {
@@ -30,7 +17,6 @@ const {
 const { createUser } = require("./controllers/user");
 const { showCart } = require("./controllers/cart");
 const { sendLocation } = require("./controllers/location");
-
 const { sendHomeMenuKeyboard } = require("./controllers/home");
 
 const {
@@ -38,6 +24,16 @@ const {
   initContactListener,
   initLocationListener,
 } = require("./events");
+
+const token = process.env.BOT_TOKEN;
+let bot;
+
+if (process.env.NODE_ENV === "production") {
+  bot = new TelegramBot(token);
+  bot.setWebHook(process.env.HEROKU_URL + bot.token);
+} else {
+  bot = new TelegramBot(token, { polling: true });
+}
 
 mongoose.connect(process.env.DATABASE_URL, {
   useNewUrlParser: true,
@@ -64,7 +60,6 @@ const sendEvents = (msg) => {
 
 const sendGallery = (msg) => {
   bot.sendMediaGroup(msg.chat.id, albumOne);
-
   bot.sendMediaGroup(msg.chat.id, albumTwo);
 };
 
@@ -97,46 +92,6 @@ bot.onText(/\/start/, (msg) => {
   sendHomeMenuKeyboard(bot, msg);
 });
 
-bot.onText(/home/i, (msg) => {
-  sendHomeMenuKeyboard(bot, msg);
-});
-
-bot.onText(/menu/i, (msg) => {
-  sendMenuPicture(bot, msg);
-});
-
-bot.onText(/order/i, (msg) => {
-  if (msg.chat.id < 0) {
-    sendGroupOrderError(msg);
-    return;
-  }
-
-  sendOrderKeyboard(bot, msg);
-});
-
-bot.onText(/📍 Location/, (msg) => {
-  sendLocation(bot, msg);
-});
-bot.onText(/location/, (msg) => {
-  sendLocation(bot, msg);
-});
-
-bot.onText(/gallery/i, (msg) => {
-  sendGallery(msg);
-});
-
-bot.onText(/competitions/i, (msg) => {
-  sendCompetitions(msg);
-});
-
-bot.onText(/events/gi, (msg) => {
-  sendEvents(msg);
-});
-
-bot.onText(/contact/i, (msg) => {
-  sendContactInfo(msg);
-});
-
 bot.on("message", (msg) => {
   if (msg.reply_to_message) {
     switch (msg.reply_to_message.text) {
@@ -147,17 +102,53 @@ bot.on("message", (msg) => {
         break;
       }
     }
+    return;
   }
 
-  if (msg.text === "🛒 Cart") {
-    showCart(bot, msg);
-  }
+  switch (msg.text) {
+    case "📖 Menu": {
+      sendMenuPicture(bot, msg);
+      break;
+    }
+    case "🍔 Order": {
+      if (msg.chat.id < 0) {
+        sendGroupOrderError(msg);
+        return;
+      }
 
-  if (msg.text === "◀️ Back to order") {
-    // sendOrderKeyboard(bot, msg);
-  }
-  if (msg.text === "Want a bot like this?") {
-    sendDeveloperContact(msg);
+      sendOrderKeyboard(bot, msg);
+      break;
+    }
+    case "🛒 Cart": {
+      showCart(bot, msg);
+      break;
+    }
+    case "📍 Location": {
+      sendLocation(bot, msg);
+      break;
+    }
+    case "📷 Gallery": {
+      sendGallery(msg);
+      break;
+    }
+    case "📱 Contact": {
+      sendContactInfo(msg);
+      break;
+    }
+    case "🎖 Competitions": {
+      sendCompetitions(msg);
+
+      break;
+    }
+    case "🎇 Events": {
+      sendEvents(msg);
+      break;
+    }
+
+    case "Want a bot like this?": {
+      sendDeveloperContact(msg);
+      break;
+    }
   }
 });
 
