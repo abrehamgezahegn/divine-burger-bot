@@ -6,7 +6,7 @@
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
-Divine-burger-bot is a online food delivery telegram bot made for a  fast food restuarant called Divine burger.
+Divine-burger-bot is a online food delivery telegram bot made for a  fast food restaurant called Divine burger.
 
 Features at glance :
 * Browse menu 
