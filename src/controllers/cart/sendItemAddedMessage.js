@@ -9,12 +9,14 @@ exports.sendItemAddedMessage = (bot, msg, mealTitle) => {
             text: "🛒 Show cart",
             callback_data: JSON.stringify({
               type: "show_cart",
+              deleteKeyboard: true,
             }),
           },
           {
             text: "🍔 Order more",
             callback_data: JSON.stringify({
               type: "show_order_menu",
+              deleteKeyboard: true,
             }),
           },
         ],

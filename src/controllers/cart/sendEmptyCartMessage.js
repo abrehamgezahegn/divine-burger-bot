@@ -10,6 +10,7 @@ exports.sendEmptyCartMessage = (bot, msg) => {
               text: "🍔 Order",
               callback_data: JSON.stringify({
                 type: "show_order_menu",
+                deleteKeyboard: true,
               }),
             },
           ],

@@ -7,7 +7,6 @@ exports.showCart = async (bot, msg) => {
 
   if (user.cart.length === 0) {
     sendEmptyCartMessage(bot, msg);
-
     return;
   }
 
@@ -29,7 +28,6 @@ exports.showCart = async (bot, msg) => {
 
   let cartKeyboard = {
     parse_mode: "Markdown",
-
     reply_markup: {
       one_time_keyboard: true,
       inline_keyboard: [
@@ -39,12 +37,14 @@ exports.showCart = async (bot, msg) => {
             text: "✅ Place Order",
             callback_data: JSON.stringify({
               type: "place_order",
+              deleteKeyboard: true,
             }),
           },
           {
             text: "🍔 Order more",
             callback_data: JSON.stringify({
               type: "show_order_menu",
+              deleteKeyboard: true,
             }),
           },
         ],

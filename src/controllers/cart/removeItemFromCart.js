@@ -1,10 +1,13 @@
 const { User } = require("../../schemas");
 const { getUser } = require("../user");
 const { showCart } = require("./showCart");
+const { sendEmptyCartMessage } = require("./sendEmptyCartMessage");
 
 exports.removeItemFromCart = async (bot, msg, cartItemIndex) => {
   const user = await getUser(msg);
   const item = user.cart[cartItemIndex];
+
+  if (!item) return;
 
   if (user.cart.length === 0) {
     bot.sendMessage(
@@ -24,4 +27,5 @@ exports.removeItemFromCart = async (bot, msg, cartItemIndex) => {
   );
 
   if (filtered.length > 0) showCart(bot, msg);
+  else sendEmptyCartMessage(bot, msg);
 };

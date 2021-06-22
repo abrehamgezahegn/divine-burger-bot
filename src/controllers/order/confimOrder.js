@@ -28,12 +28,14 @@ exports.confirmOrder = async (bot, msg) => {
               text: "Yes",
               callback_data: JSON.stringify({
                 type: "show_order_menu",
+                deleteKeyboard: true,
               }),
             },
             {
               text: "Nope",
               callback_data: JSON.stringify({
                 type: "go_to_home",
+                deleteKeyboard: true,
               }),
             },
           ],
