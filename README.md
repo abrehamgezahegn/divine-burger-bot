@@ -1,6 +1,8 @@
 <!-- PROJECT LOGO -->
 <br />
-  <img src={"https://res.cloudinary.com/de5awe7fs/image/upload/v1624365218/Divine/photo_2021-06-22_14-44-20.jpg"} style={{margin:"auto", marginBottom: 32}}/>
+<!--  <div style="display: flex;justify-content: center;">  -->
+<!--   <img horizontal-align="center" src="https://res.cloudinary.com/de5awe7fs/image/upload/v1624365218/Divine/photo_2021-06-22_14-44-20.jpg" style="width: 10px;"/> -->
+<!--  </div> -->
   <h3 align="center">Divine burger bot</h3>
 
 
