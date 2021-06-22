@@ -39,11 +39,12 @@ Setting up this project is easy and straight forward
    ```sh
    npm install
    ```
-4. Enter your API in `.env`
+4. Enter your keys in `.env`
    ```JS
     BOT_TOKEN= [YOUR_TELEGRAM_BOT_KEY]
-    TELEGRAM_GROUP_ID=[YOUR_TELEGRAM_GROUP_ID]
+    TELEGRAM_GROUP_ID=[YOUR_TELEGRAM_GROUP_ID] # telegram group to recieve orders
     DATABASE_URL=[YOUR_MONGODB_DATABASE_URL]
+    HEROKU_URL=[HEORKU_ENDPOINT] #for heroku deployment
    ```
 
 # Repository overview
