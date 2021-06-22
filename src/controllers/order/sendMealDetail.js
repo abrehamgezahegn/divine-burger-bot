@@ -11,12 +11,14 @@ exports.sendMealDetail = async (bot, msg, data) => {
             callback_data: JSON.stringify({
               type: "add_to_cart",
               meal_id: data.meal_id,
+              deleteKeyboard: true,
             }),
           },
           {
             text: "🙉 Cancel",
             callback_data: JSON.stringify({
               type: "show_order_menu",
+              deleteKeyboard: true,
             }),
           },
         ],

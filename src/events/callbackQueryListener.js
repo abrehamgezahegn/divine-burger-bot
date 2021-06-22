@@ -22,6 +22,7 @@ const { sendHomeMenuKeyboard } = require("../controllers/home");
 const {
   sendLocationOptions,
   acceptLocationDesc,
+  sendLocationPrompt,
 } = require("../controllers/location");
 
 const { outsideView } = require("../staticData/gallery");

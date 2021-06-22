@@ -1,5 +1,6 @@
 const { getUser } = require("../user");
 const { generateOrderDetails } = require("../../utils/generateOrderDetails");
+const { sendEmptyCartMessage } = require("./sendEmptyCartMessage");
 
 exports.showCart = async (bot, msg) => {
   const user = await getUser(msg);
