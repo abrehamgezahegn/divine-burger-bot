@@ -160,7 +160,13 @@ const app = express();
 
 app.use(bodyParser.json());
 
-app.listen(process.env.PORT);
+const listener = app.listen(process.env.PORT, () => {
+  console.log("listening on:", listener.address().port);
+});
+
+app.get("/", (req, res) => {
+  res.send("Sever is up");
+});
 
 app.post("/" + bot.token, (req, res) => {
   bot.processUpdate(req.body);
