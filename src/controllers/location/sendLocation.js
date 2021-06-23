@@ -11,7 +11,6 @@ exports.sendLocation = (bot, msg) => {
               text: "📷 Outside view",
               callback_data: JSON.stringify({
                 type: "send_outside_view",
-                deleteKeyboard: true,
               }),
             },
           ],

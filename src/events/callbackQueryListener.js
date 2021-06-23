@@ -55,7 +55,6 @@ exports.initCallbackQuery = (bot) => {
 
   bot.on("callback_query", async (query) => {
     const data = JSON.parse(query.data);
-
     bot.answerCallbackQuery(query.id);
     if (data.deleteKeyboard) {
       bot.deleteMessage(query.message.chat.id, query.message.message_id);

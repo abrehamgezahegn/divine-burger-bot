@@ -145,6 +145,25 @@ bot.on("message", (msg) => {
       break;
     }
 
+    // [, "◀️ Back to order"],
+
+    case "🏠 Back to home": {
+      sendHomeMenuKeyboard(bot, msg);
+
+      break;
+    }
+
+    case "◀️ Back to order": {
+      if (msg.chat.id < 0) {
+        sendGroupOrderError(msg);
+        return;
+      }
+
+      sendOrderKeyboard(bot, msg);
+      break;
+      break;
+    }
+
     case "Want a bot like this?": {
       sendDeveloperContact(msg);
       break;

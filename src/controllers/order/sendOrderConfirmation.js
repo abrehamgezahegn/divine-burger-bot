@@ -16,7 +16,7 @@ exports.sendOrderConfirmation = async (bot, msg) => {
             text: "✅ Confirm Order",
             callback_data: JSON.stringify({
               type: "confirm_order",
-              deleteKeyboard: true,
+              // deleteKeyboard: true,
             }),
           },
         ],
