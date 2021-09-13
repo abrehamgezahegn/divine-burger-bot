@@ -7,7 +7,8 @@ exports.sendHomeMenuKeyboard = (
     reply_markup: {
       one_time_keyboard: true,
       keyboard: [
-        ["**Divine is not accepting orders from this bot**"]["📖 Menu"],
+        ["**Divine is not accepting orders from this bot**"],
+        ["📖 Menu"],
         ["🍔 Order"],
         ["🛒 Cart"],
         ["📍 Location"],
